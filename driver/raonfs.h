@@ -37,6 +37,8 @@ struct raonfs_dentry {
  * Inode data in memory of raonfs
  */
 struct raonfs_inode_info {
+	struct inode vfs_inode;
+
 	__u32 size;
 	__u32 mode;
 	__u32 link;
@@ -53,5 +55,15 @@ struct raonfs_sb_info {
 	__u32 blocksize;
 	__u32 ioffset;
 };
+
+static inline raonfs_inode_info *RAONFS_INODE(struct inode *inode)
+{
+	return container_of(inode, struct raonfs_inode_info, vfs_inode);
+}
+
+static inline raonfs_sb_info *RAONFS_SB(struct super_block *sb)
+{
+	return sb->s_fs_info;
+}
 
 #endif
