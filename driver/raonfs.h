@@ -9,6 +9,7 @@ struct raonfs_superblock {
 	__le32 textbase;
 	__le32 textsize;
 	__le32 fsname;
+	__le32 blocksize;
 	__le32 ioffset;
 };
 
@@ -49,6 +50,7 @@ struct raonfs_sb_info {
 	__u32 textbase;
 	__u32 textsize;
 	__u32 fsname;
+	__u32 blocksize;
 	__u32 ioffset;
 };
 
