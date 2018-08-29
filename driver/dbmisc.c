@@ -1,4 +1,7 @@
+#include <linux/types.h>
 #include <linux/string.h>
+#include <linux/printk.h>
+#include <linux/sched.h>
 
 void __raonfs_message(const char *function, unsigned int line, const char *tag, const char *fmt, ...)
 {

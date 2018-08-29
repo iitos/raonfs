@@ -1,6 +1,8 @@
 #ifndef __RAONFS_H__
 #define __RAONFS_H__
 
+#include <linux/types.h>
+
 /*
  * Superblock structure on disk of raonfs
  */
@@ -24,7 +26,7 @@ struct raonfs_inode {
 	__le64 mtime;
 	__le64 ctime;
 	__le64 doffset;
-}
+};
 
 /*
  * Directory entry structure on disk of raonfs
@@ -55,15 +57,16 @@ struct raonfs_sb_info {
 	__u32 fsname;
 	__u32 fssize;
 	__u32 blocksize;
+	__u32 blockbits;
 	__u32 ioffset;
 };
 
-static inline raonfs_inode_info *RAONFS_INODE(struct inode *inode)
+static inline struct raonfs_inode_info *RAONFS_INODE(struct inode *inode)
 {
 	return container_of(inode, struct raonfs_inode_info, vfs_inode);
 }
 
-static inline raonfs_sb_info *RAONFS_SB(struct super_block *sb)
+static inline struct raonfs_sb_info *RAONFS_SB(struct super_block *sb)
 {
 	return sb->s_fs_info;
 }
