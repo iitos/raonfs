@@ -83,7 +83,7 @@ int raonfs_block_strcmp(struct super_block *sb, unsigned long pos, const char *s
 
 	for (; size > 0; size -= segment, pos += segment, str += segment) {
 		offset = pos & (sbi->blocksize - 1);
-		segment = min_t(size_t, limit, sbi->blocksize - offset);
+		segment = min_t(size_t, size, sbi->blocksize - offset);
 		bh = sb_bread(sb, pos >> sbi->blockbits);
 		if (bh == NULL)
 			return -EIO;
