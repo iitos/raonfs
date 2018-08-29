@@ -3,7 +3,7 @@
 #include <linux/printk.h>
 #include <linux/sched.h>
 
-void __raonfs_message(const char *function, unsigned int line, const char *fmt, ...)
+void __raonfs_notice(const char *function, unsigned int line, const char *fmt, ...)
 {
 	struct va_format vaf;
 	va_list args;
