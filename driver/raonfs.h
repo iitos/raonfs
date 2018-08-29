@@ -2,6 +2,7 @@
 #define __RAONFS_H__
 
 #include <linux/types.h>
+#include <linux/fs.h>
 
 /*
  * Superblock structure on disk of raonfs
