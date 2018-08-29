@@ -4,6 +4,8 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 
+#define RAONFS_MAGIC	0x11111111
+
 /*
  * Superblock structure on disk of raonfs
  */
