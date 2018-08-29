@@ -108,7 +108,7 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 		goto err2;
 	}
 
-	raonfs_message("Mounting raonfs: magic(0x%x): blocksize(%d)", rsb->magic, rsb->blocksize);
+	raonfs_notice("Mounting raonfs: magic(0x%x): blocksize(%d)", rsb->magic, rsb->blocksize);
 
 	kfree(rsb);
 
@@ -153,7 +153,7 @@ static int __init raonfs_init(void)
 {
 	int ret;
 
-	raonfs_message("Initialize module");
+	raonfs_notice("Initialize module");
 
 	raonfs_inode_cachep =
 		kmem_cache_create("raonfs_i",
@@ -181,7 +181,7 @@ error_register:
 
 static void __exit raonfs_cleanup(void)
 {
-	raonfs_message("Cleanup module");
+	raonfs_notice("Cleanup module");
 
 	unregister_filesystem(&raonfs_fs_type);
 
