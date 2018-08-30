@@ -102,6 +102,8 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 	if (!(inode->i_state & I_NEW))
 		return inode;
 
+	ri = RAONFS_INODE(inode);
+
 	set_nlink(inode, 1);
 	inode->i_size = le32_to_cpu(rie.size);
 	inode->i_ctime.tv_sec = le32_to_cpu(rie.ctime);
@@ -113,7 +115,22 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 	i_uid_write(inode, uid);
 	i_gid_write(inode, gid);
 
-	ri = RAONFS_INODE(inode);
+	inode->i_mode = le16_to_cpu(rie.mode);
+
+	switch (inode->i_mode & S_IFMT) {
+		case S_IFREG:
+			break;
+
+		case S_IFLNK:
+			break;
+
+		case S_IFDIR:
+			raonfs_notice("directory...");
+			break;
+
+		default:
+			break;
+	}
 
 	unlock_new_inode(inode);
 

@@ -68,14 +68,14 @@ def search_text(textree, token):
     return textree[token]
 
 def get_inodesize():
-    return struct.calcsize("IIHHIIIIQ")
+    return struct.calcsize("IHHHIIIIQ")
 
 def write_inodes(td, fsinfo, textree, fstree):
     for nodeid in sorted(fstree):
         node = fstree[nodeid]
         td.seek(node["ioffset"])
         write_packdata(td, "I", node["size"])
-        write_packdata(td, "I", node["mode"])
+        write_packdata(td, "H", node["mode"])
         write_packdata(td, "H", node["uid"])
         write_packdata(td, "H", node["gid"])
         if "link" in node:
