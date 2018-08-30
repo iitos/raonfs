@@ -5,7 +5,7 @@
 /*
  * Read data on a block device
  */
-int raonfs_block_read(struct super_block *sb, unsigned long pos, void *buf, size_t len)
+size_t raonfs_block_read(struct super_block *sb, unsigned long pos, void *buf, size_t len)
 {
 	struct raonfs_sb_info *sbi = RAONFS_SB(sb);
 	struct buffer_head *bh;

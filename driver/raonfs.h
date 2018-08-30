@@ -17,7 +17,7 @@ struct raonfs_superblock {
 	__le64 fssize;
 	__le32 blocksize;
 	__le32 ioffset;
-};
+} __attribute__((__packed__));
 
 /*
  * Inode structure on disk of raonfs
@@ -29,7 +29,7 @@ struct raonfs_inode {
 	__le64 mtime;
 	__le64 ctime;
 	__le64 doffset;
-};
+} __attribute__((__packed__));
 
 /*
  * Directory entry structure on disk of raonfs
@@ -37,7 +37,7 @@ struct raonfs_inode {
 struct raonfs_dentry {
 	__le32 name;
 	__le32 ioffset;
-};
+} __attribute__((__packed__));
 
 /*
  * Inode data in memory of raonfs
