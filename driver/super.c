@@ -129,7 +129,7 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 	if (sb->s_blocksize != rsb->blocksize)
 		sb_set_blocksize(sb, rsb->blocksize);
 
-	raonfs_notice("Mounting raonfs: magic(0x%x): blocksize(%d)", rsb->magic, rsb->blocksize);
+	raonfs_notice("Mounting raonfs: magic(0x%x): blocksize(%d) fssize(%d)", rsb->magic, rsb->blocksize, rsb->fssize);
 
 	kfree(rsb);
 
