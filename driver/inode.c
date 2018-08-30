@@ -59,7 +59,7 @@ err1:
 }
 
 const struct inode_operations raonfs_dir_inode_operations = {
-	.lookup		= raonfs_lookup
+	.lookup = raonfs_lookup
 };
 
 /*
@@ -75,9 +75,9 @@ static int raonfs_readdir(struct file *file, struct dir_context *ctx)
 	int off;
 	int ret;
 
-	for (off = ctx->pos; off < dir->i_size; off += sizeof(struct raonfs_dentry)) {
-		ctx->pos = off;
+	off = ctx->pos;
 
+	while (off < dir->i_size) {
 		ret = raonfs_block_read(dir->i_sb, ri->doffset + off, &rde, sizeof(struct raonfs_dentry));
 		if (ret < 0)
 			break;
@@ -88,15 +88,19 @@ static int raonfs_readdir(struct file *file, struct dir_context *ctx)
 
 		if (!dir_emit(ctx, dname, rde.namelen, rde.ioffset, raonfs_filetype_table[rde.type]))
 			break;
+
+		off += sizeof(struct raonfs_dentry);
 	}
+
+	ctx->pos = off;
 
 	return 0;
 }
 
 const struct file_operations raonfs_dir_operations = {
-	.read						= generic_read_dir,
-	.iterate_shared	= raonfs_readdir,
-	.llseek					= generic_file_llseek
+	.read = generic_read_dir,
+	.iterate_shared = raonfs_readdir,
+	.llseek = generic_file_llseek
 };
 
 /*

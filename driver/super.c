@@ -250,11 +250,11 @@ static void raonfs_kill_sb(struct super_block *sb)
 }
 
 static struct file_system_type raonfs_fs_type = {
-	.owner		= THIS_MODULE,
-	.name			= "raonfs",
-	.mount		= raonfs_mount,
-	.kill_sb	= raonfs_kill_sb,
-	.fs_flags	= FS_REQUIRES_DEV
+	.owner = THIS_MODULE,
+	.name = "raonfs",
+	.mount = raonfs_mount,
+	.kill_sb = raonfs_kill_sb,
+	.fs_flags = FS_REQUIRES_DEV
 };
 MODULE_ALIAS_FS("raonfs");
 
