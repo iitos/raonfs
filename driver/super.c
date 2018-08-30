@@ -115,6 +115,7 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 	i_uid_write(inode, uid);
 	i_gid_write(inode, gid);
 
+	inode->i_rdev = le32_to_cpu(rie.rdev);
 	inode->i_mode = le16_to_cpu(rie.mode);
 
 	switch (inode->i_mode & S_IFMT) {
@@ -125,10 +126,10 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 			break;
 
 		case S_IFDIR:
-			raonfs_notice("directory...");
 			break;
 
 		default:
+			init_special_inode(inode, inode->i_mode, inode->i_rdev);
 			break;
 	}
 
