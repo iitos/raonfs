@@ -4,7 +4,7 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 
-#define RAONFS_MAGIC	0x11111111
+#define RAONFS_MAGIC	0x4e4f4152
 
 /*
  * Superblock structure on disk of raonfs
@@ -59,8 +59,6 @@ struct raonfs_sb_info {
 	__u32 textsize;
 	__u32 fsname;
 	__u32 fssize;
-	__u32 blocksize;
-	__u32 blockbits;
 	__u32 ioffset;
 };
 

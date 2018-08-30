@@ -18,10 +18,10 @@ int raonfs_block_read(struct super_block *sb, unsigned long pos, void *buf, size
 	if (len > sbi->fssize - pos)
 		len = sbi->fssize - pos;
 
-	for (remains = len; remains > 0; buf += segment, len -= segment, pos += segment) {
-		offset = pos & (sbi->blocksize - 1);
-		segment = min_t(size_t, remains, sbi->blocksize - offset);
-		bh = sb_bread(sb, pos >> sbi->blockbits);
+	for (remains = len; remains > 0; buf += segment, remains -= segment, pos += segment) {
+		offset = pos & (sb->s_blocksize - 1);
+		segment = min_t(size_t, remains, sb->s_blocksize - offset);
+		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
 		if (bh == NULL)
 			return -EIO;
 		memcpy(buf, bh->b_data + offset, segment);
@@ -49,9 +49,9 @@ ssize_t raonfs_block_strlen(struct super_block *sb, unsigned long pos, size_t li
 		limit = sbi->fssize - pos;
 
 	for (; limit > 0; limit -= segment, pos += segment, len += segment) {
-		offset = pos & (sbi->blocksize - 1);
-		segment = min_t(size_t, limit, sbi->blocksize - offset);
-		bh = sb_bread(sb, pos >> sbi->blockbits);
+		offset = pos & (sb->s_blocksize - 1);
+		segment = min_t(size_t, limit, sb->s_blocksize - offset);
+		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
 		if (bh == NULL)
 			return -EIO;
 		buf = bh->b_data + offset;
@@ -82,13 +82,13 @@ int raonfs_block_strcmp(struct super_block *sb, unsigned long pos, const char *s
 		return -EIO;
 
 	for (; size > 0; size -= segment, pos += segment, str += segment) {
-		offset = pos & (sbi->blocksize - 1);
-		segment = min_t(size_t, size, sbi->blocksize - offset);
-		bh = sb_bread(sb, pos >> sbi->blockbits);
+		offset = pos & (sb->s_blocksize - 1);
+		segment = min_t(size_t, size, sb->s_blocksize - offset);
+		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
 		if (bh == NULL)
 			return -EIO;
 		matched = memcmp(bh->b_data + offset, str, segment) == 0;
-		if (matched && size == 0 && offset + segment < sbi->blocksize) {
+		if (matched && size == 0 && offset + segment < sb->s_blocksize) {
 			if (!bh->b_data[offset + segment])
 				terminated = true;
 			else
@@ -100,7 +100,7 @@ int raonfs_block_strcmp(struct super_block *sb, unsigned long pos, const char *s
 	}
 
 	if (!terminated) {
-		bh = sb_bread(sb, pos >> sbi->blockbits);
+		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
 		if (bh == NULL)
 			return -EIO;
 		matched = !bh->b_data[0];
