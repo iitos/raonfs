@@ -13,7 +13,8 @@ struct raonfs_superblock {
 	__le32 magic;
 	__le32 textbase;
 	__le32 textsize;
-	__le32 fsname;
+	__le32 fsnameoff;
+	__le32 fsnamelen;
 	__le64 fssize;
 	__le32 blocksize;
 	__le32 ioffset;
@@ -28,7 +29,6 @@ struct raonfs_inode {
 	__le16 mode;
 	__le16 uid;
 	__le16 gid;
-	__le32 link;
 	__le32 ctime;
 	__le32 mtime;
 	__le32 atime;
@@ -39,7 +39,9 @@ struct raonfs_inode {
  * Directory entry structure on disk of raonfs
  */
 struct raonfs_dentry {
-	__le32 name;
+	__le32 nameoff;
+	__le16 namelen;
+	__le16 type;
 	__le32 ioffset;
 } __attribute__((__packed__));
 
@@ -49,7 +51,6 @@ struct raonfs_dentry {
 struct raonfs_inode_info {
 	struct inode vfs_inode;
 
-	__u32 link;
 	__u64 doffset;
 };
 
@@ -59,7 +60,6 @@ struct raonfs_inode_info {
 struct raonfs_sb_info {
 	__u32 textbase;
 	__u32 textsize;
-	__u32 fsname;
 	__u32 fssize;
 	__u32 ioffset;
 };
@@ -73,5 +73,8 @@ static inline struct raonfs_sb_info *RAONFS_SB(struct super_block *sb)
 {
 	return sb->s_fs_info;
 }
+
+extern const struct inode_operations raonfs_dir_inode_operations;
+extern const struct file_operations raonfs_dir_operations;
 
 #endif
