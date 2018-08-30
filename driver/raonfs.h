@@ -26,8 +26,9 @@ struct raonfs_inode {
 	__le32 size;
 	__le32 mode;
 	__le32 link;
-	__le64 mtime;
-	__le64 ctime;
+	__le32 ctime;
+	__le32 mtime;
+	__le32 atime;
 	__le64 doffset;
 } __attribute__((__packed__));
 

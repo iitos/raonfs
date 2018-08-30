@@ -101,6 +101,12 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 	if (!(inode->i_state & I_NEW))
 		return inode;
 
+	set_nlink(inode, 1);
+	inode->i_size = le32_to_cpu(rie.size);
+	inode->i_ctime.tv_sec = le32_to_cpu(rie.ctime);
+	inode->i_mtime.tv_sec = le32_to_cpu(rie.mtime);
+	inode->i_atime.tv_sec = le32_to_cpu(rie.atime);
+
 	ri = RAONFS_INODE(inode);
 
 	unlock_new_inode(inode);
