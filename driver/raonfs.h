@@ -77,4 +77,6 @@ static inline struct raonfs_sb_info *RAONFS_SB(struct super_block *sb)
 extern const struct inode_operations raonfs_dir_inode_operations;
 extern const struct file_operations raonfs_dir_operations;
 
+extern struct inode *raonfs_iget(struct super_block *sb, unsigned long pos);
+
 #endif
