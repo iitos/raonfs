@@ -96,11 +96,21 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_flags |= SB_RDONLY | SB_NOATIME;
 	sb->s_op = &raonfs_super_operations;
 
+	/*
+	 * Set default block size temporarily
+	 */
+	sb_set_blocksize(sb, BLOCK_SIZE);
+
 	rsb = kmalloc(512, GFP_KERNEL);
 	if (rsb == NULL) {
 		ret = -ENOMEM;
 		goto err1;
 	}
+
+	/*
+	 * Set filesystem size to 512 bytes temporarily for reading superblock from the block device
+	 */
+	sbi->fssize = 512;
 
 	ret = raonfs_block_read(sb, 0, rsb, 512);
 	if (ret < 0) {
