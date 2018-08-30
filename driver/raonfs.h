@@ -25,6 +25,8 @@ struct raonfs_superblock {
 struct raonfs_inode {
 	__le32 size;
 	__le32 mode;
+	__le16 uid;
+	__le16 gid;
 	__le32 link;
 	__le32 ctime;
 	__le32 mtime;

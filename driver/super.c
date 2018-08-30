@@ -86,6 +86,7 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 	struct raonfs_inode_info *ri;
 	struct raonfs_inode rie;
 	struct inode *inode;
+	uid_t uid, gid;
 	int ret;
 
 	ret = raonfs_block_read(sb, pos, &rie, sizeof(rie));
@@ -106,6 +107,11 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 	inode->i_ctime.tv_sec = le32_to_cpu(rie.ctime);
 	inode->i_mtime.tv_sec = le32_to_cpu(rie.mtime);
 	inode->i_atime.tv_sec = le32_to_cpu(rie.atime);
+
+	uid = (uid_t)le16_to_cpu(rie.uid);
+	gid = (gid_t)le16_to_cpu(rie.gid);
+	i_uid_write(inode, uid);
+	i_gid_write(inode, gid);
 
 	ri = RAONFS_INODE(inode);
 
