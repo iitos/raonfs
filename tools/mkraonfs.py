@@ -17,6 +17,16 @@ endian_formats = {}
 endian_formats["little"] = "<"
 endian_formats["big"] = ">"
 
+dentry_types = {}
+dentry_types["none"] = 0
+dentry_types["dir"] = 1
+dentry_types["file"] = 2
+dentry_types["link"] = 3
+dentry_types["bdev"] = 4
+dentry_types["cdev"] = 5
+dentry_types["fifo"] = 6
+dentry_types["sock"] = 7
+
 def get_steps(bytesize, unitsize):
     if type(bytesize) is io.BytesIO:
         bytesize = sys.getsizeof(bytesize)
@@ -32,7 +42,7 @@ def read_packdata(td, fmt):
     return data
 
 def get_supersize():
-    return struct.calcsize("BBBBIIIQII")
+    return struct.calcsize("BBBBIIIIQII")
 
 def write_superblock(td, fsinfo, textree):
     td.seek(0)
@@ -40,6 +50,7 @@ def write_superblock(td, fsinfo, textree):
     write_packdata(td, "I", fsinfo["textbase"])
     write_packdata(td, "I", fsinfo["textsize"])
     write_packdata(td, "I", search_text(textree, fsinfo["fsname"]))
+    write_packdata(td, "I", len(fsinfo["fsname"]))
     write_packdata(td, "Q", fsinfo["fssize"])
     write_packdata(td, "I", fsinfo["blocksize"])
     write_packdata(td, "I", fsinfo["rootid"]["ioffset"])
@@ -68,7 +79,7 @@ def search_text(textree, token):
     return textree[token]
 
 def get_inodesize():
-    return struct.calcsize("IIHHHIIIIQ")
+    return struct.calcsize("IIHHHIIIQ")
 
 def write_inodes(td, fsinfo, textree, fstree):
     for nodeid in sorted(fstree):
@@ -79,10 +90,6 @@ def write_inodes(td, fsinfo, textree, fstree):
         write_packdata(td, "H", node["mode"])
         write_packdata(td, "H", node["uid"])
         write_packdata(td, "H", node["gid"])
-        if "link" in node:
-            write_packdata(td, "I", search_text(textree, node["link"]))
-        else:
-            write_packdata(td, "I", 0)
         write_packdata(td, "I", node["ctime"])
         write_packdata(td, "I", node["mtime"])
         write_packdata(td, "I", node["atime"])
@@ -93,7 +100,7 @@ def write_inodes(td, fsinfo, textree, fstree):
         update_fssize(fsinfo, td)
 
 def get_dentsize():
-    return struct.calcsize("II")
+    return struct.calcsize("IHHI")
 
 def write_dentries(td, fsinfo, textree, fstree):
     for nodeid in sorted(fstree):
@@ -102,8 +109,11 @@ def write_dentries(td, fsinfo, textree, fstree):
             td.seek(node["doffset"])
             children = node["children"]
             for childname in sorted(children):
+                child = fstree[children[childname]]
                 write_packdata(td, "I", search_text(textree, childname))
-                write_packdata(td, "I", fstree[children[childname]]["ioffset"])
+                write_packdata(td, "H", len(childname))
+                write_packdata(td, "H", dentry_types[child["type"]])
+                write_packdata(td, "I", child["ioffset"])
             update_fssize(fsinfo, td)
 
 def write_blocks(td, fsinfo, textree, fstree):
@@ -114,6 +124,9 @@ def write_blocks(td, fsinfo, textree, fstree):
             with open(node["path"], "rb") as od:
                 td.write(od.read())
             update_fssize(fsinfo, td)
+        elif node["type"] == "link":
+            td.seek(node["doffset"])
+            td.write(node["link"])
 
 def get_fsnode(fstree, nodepath):
     nodestat = os.stat(nodepath)
@@ -121,6 +134,7 @@ def get_fsnode(fstree, nodepath):
     if nodeid not in fstree:
         fstree[nodeid] = node = {}
         node["id"] = nodeid
+        node["type"] = "none"
         node["size"] = 0
         node["ioffset"] = 0
         node["doffset"] = 0
@@ -151,6 +165,10 @@ def get_fsnode(fstree, nodepath):
                 node["type"] = "bdev"
                 node["major"] = os.major(noderdev)
                 node["minor"] = os.minor(noderdev)
+            elif stat.S_ISFIFO(nodemode):
+                node["type"] = "fifo"
+            elif stat.S_ISSOCK(nodemode):
+                node["type"] = "sock"
     return fstree[nodeid]
 
 def build_fstree(path):
@@ -177,6 +195,8 @@ def update_sizes(fstree):
             node["size"] = os.path.getsize(node["path"])
         elif node["type"] == "dir":
             node["size"] = get_dentsize() * len(node["children"])
+        elif node["type"] == "link":
+            node["size"] = len(node["link"])
 
 def update_inlines(fstree, baseoffset, maxsize):
     isize = get_inodesize()
@@ -235,8 +255,6 @@ if __name__ == "__main__":
         if "children" in node:
             for childname, chlidid in node["children"].items():
                 insert_text(textree, childname, textio)
-        if "link" in node:
-            insert_text(textree, node["link"], textio)
 
     fsinfo = {}
     fsinfo["magics"] = args.magics

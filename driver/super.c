@@ -103,6 +103,7 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 		return inode;
 
 	ri = RAONFS_INODE(inode);
+	ri->doffset = rie.doffset;
 
 	set_nlink(inode, 1);
 	inode->i_size = le32_to_cpu(rie.size);
@@ -126,6 +127,8 @@ static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 			break;
 
 		case S_IFDIR:
+			inode->i_op = &raonfs_dir_inode_operations;
+			inode->i_fop = &raonfs_dir_operations;
 			break;
 
 		default:
@@ -192,6 +195,8 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 	if (sb->s_blocksize != rsb->blocksize)
 		sb_set_blocksize(sb, rsb->blocksize);
 
+	sbi->textbase = rsb->textbase;
+	sbi->textsize = rsb->textsize;
 	sbi->fssize = rsb->fssize;
 
 	raonfs_notice("mounting raonfs: magic(0x%x): blocksize(%d) fssize(%lld) root(%d)", rsb->magic, rsb->blocksize, rsb->fssize, rsb->ioffset);
@@ -211,7 +216,7 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	kfree(rsb);
 
-	return -EINVAL;
+	return 0;
 
 err3:
 	iput(root);
