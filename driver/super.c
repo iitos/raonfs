@@ -192,6 +192,6 @@ static void __exit raonfs_cleanup(void)
 module_init(raonfs_init);
 module_exit(raonfs_cleanup);
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Inhyeok Kim");
 MODULE_DESCRIPTION("Read-Only Filesystem");
+MODULE_AUTHOR("Inhyeok Kim");
+MODULE_LICENSE("GPL");
