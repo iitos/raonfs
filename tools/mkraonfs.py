@@ -32,7 +32,7 @@ def read_packdata(td, fmt):
     return data
 
 def get_supersize():
-    return struct.calcsize("BBBBIIII")
+    return struct.calcsize("BBBBIIIQII")
 
 def write_superblock(td, fsinfo, textree):
     td.seek(0)
