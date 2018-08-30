@@ -79,12 +79,46 @@ static const struct super_operations raonfs_super_operations = {
 };
 
 /*
+ * Fetch a inode based on its position
+ */
+static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
+{
+	struct raonfs_inode_info *ri;
+	struct raonfs_inode rie;
+	struct inode *inode;
+	int ret;
+
+	ret = raonfs_block_read(sb, pos, &rie, sizeof(rie));
+	if (ret < 0)
+		goto err1;
+
+	inode = iget_locked(sb, pos);
+	if (inode == NULL) {
+		ret = -ENOMEM;
+		goto err1;
+	}
+
+	if (!(inode->i_state & I_NEW))
+		return inode;
+
+	ri = RAONFS_INODE(inode);
+
+	unlock_new_inode(inode);
+
+	return inode;
+
+err1:
+	return ERR_PTR(ret);
+}
+
+/*
  * Fill in the superblock
  */
 static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 {
 	struct raonfs_superblock *rsb;
 	struct raonfs_sb_info *sbi;
+	struct inode *root;
 	int ret;
 
 	sbi = kzalloc(sizeof(struct raonfs_sb_info), GFP_KERNEL);
@@ -120,7 +154,7 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	sb->s_magic = le32_to_cpu(rsb->magic);
 	if (sb->s_magic != RAONFS_MAGIC) {
-		raonfs_error("Can't find raon filesystem");
+		raonfs_error("can't find raon filesystem");
 		ret = -EINVAL;
 		goto err2;
 	}
@@ -128,11 +162,29 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 	if (sb->s_blocksize != rsb->blocksize)
 		sb_set_blocksize(sb, rsb->blocksize);
 
-	raonfs_notice("Mounting raonfs: magic(0x%x): blocksize(%d) fssize(%lld)", rsb->magic, rsb->blocksize, rsb->fssize);
+	sbi->fssize = rsb->fssize;
+
+	raonfs_notice("mounting raonfs: magic(0x%x): blocksize(%d) fssize(%lld) root(%d)", rsb->magic, rsb->blocksize, rsb->fssize, rsb->ioffset);
+
+	root = raonfs_iget(sb, rsb->ioffset);
+	if (IS_ERR(root)) {
+		raonfs_error("can't find root inode");
+		ret = PTR_ERR(root);
+		goto err2;
+	}
+
+	sb->s_root = d_make_root(root);
+	if (sb->s_root == NULL) {
+		ret = -ENOMEM;
+		goto err3;
+	}
 
 	kfree(rsb);
 
 	return -EINVAL;
+
+err3:
+	iput(root);
 
 err2:
 	kfree(rsb);
@@ -173,7 +225,7 @@ static int __init raonfs_init(void)
 {
 	int ret;
 
-	raonfs_notice("Initialize module");
+	raonfs_notice("initialize module");
 
 	raonfs_inode_cachep =
 		kmem_cache_create("raonfs_i",
@@ -181,13 +233,13 @@ static int __init raonfs_init(void)
 				SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD | SLAB_ACCOUNT,
 				raonfs_inode_init_once);
 	if (raonfs_inode_cachep == NULL) {
-		raonfs_error("Failed to initialize inode cache");
+		raonfs_error("failed to initialize inode cache");
 		return -ENOMEM;
 	}
 
 	ret = register_filesystem(&raonfs_fs_type);
 	if (ret) {
-		raonfs_error("Failed to register filesystem");
+		raonfs_error("failed to register filesystem");
 		goto error_register;
 	}
 
@@ -201,7 +253,7 @@ error_register:
 
 static void __exit raonfs_cleanup(void)
 {
-	raonfs_notice("Cleanup module");
+	raonfs_notice("cleanup module");
 
 	unregister_filesystem(&raonfs_fs_type);
 
