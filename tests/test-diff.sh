@@ -3,7 +3,7 @@
 set -e
 
 SOURCE=$1
-TARGET=$2
+TARGET=.img
 MOUNTO=.mnt
 LDEV=$(losetup -f)
 
