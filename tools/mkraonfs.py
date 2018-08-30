@@ -40,7 +40,7 @@ def write_superblock(td, fsinfo, textree):
     write_packdata(td, "I", fsinfo["textbase"])
     write_packdata(td, "I", fsinfo["textsize"])
     write_packdata(td, "I", search_text(textree, fsinfo["fsname"]))
-    write_packdata(td, "I", fsinfo["fssize"])
+    write_packdata(td, "Q", fsinfo["fssize"])
     write_packdata(td, "I", fsinfo["blocksize"])
     write_packdata(td, "I", fsinfo["rootid"]["ioffset"])
 
