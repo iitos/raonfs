@@ -3,6 +3,11 @@
 #include <linux/printk.h>
 #include <linux/sched.h>
 
+void __raonfs_trace(const char *function, unsigned int line)
+{
+	printk(KERN_NOTICE "RAONFS: %s@%d\n", function, line);
+}
+
 void __raonfs_notice(const char *function, unsigned int line, const char *fmt, ...)
 {
 	struct va_format vaf;
