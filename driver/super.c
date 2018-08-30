@@ -81,7 +81,7 @@ static const struct super_operations raonfs_super_operations = {
 /*
  * Fetch a inode based on its position
  */
-static struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
+struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 {
 	struct raonfs_inode_info *ri;
 	struct raonfs_inode rie;
