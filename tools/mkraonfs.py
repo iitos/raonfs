@@ -39,8 +39,15 @@ def write_superblock(td, fsinfo, textree):
     write_packdata(td, "BBBB", *bytearray(fsinfo["magics"], "utf-8"))
     write_packdata(td, "I", fsinfo["textbase"])
     write_packdata(td, "I", fsinfo["textsize"])
-    write_packdata(td, "I", search_text(textree, fsinfo["name"]))
+    write_packdata(td, "I", search_text(textree, fsinfo["fsname"]))
+    write_packdata(td, "I", fsinfo["fssize"])
+    write_packdata(td, "I", fsinfo["blocksize"])
     write_packdata(td, "I", fsinfo["rootid"]["ioffset"])
+
+def update_fssize(fsinfo, td):
+    fssize = td.tell()
+    if fsinfo["fssize"] < fssize:
+        fsinfo["fssize"] = fssize
 
 def get_textsize(textio):
     return sys.getsizeof(textio)
@@ -49,6 +56,7 @@ def write_texts(td, fsinfo, textree, textio):
     textio.seek(0)
     td.seek(fsinfo["textbase"])
     td.write(textio.read())
+    update_fssize(fsinfo, td)
 
 def insert_text(textree, token, textio):
     if token not in textree:
@@ -78,6 +86,7 @@ def write_inodes(td, fsinfo, textree, fstree):
             write_packdata(td, "Q", node["doffset"])
         else:
             write_packdata(td, "Q", 0)
+        update_fssize(fsinfo, td)
 
 def get_dentsize():
     return struct.calcsize("II")
@@ -91,6 +100,7 @@ def write_dentries(td, fsinfo, textree, fstree):
             for childname in sorted(children):
                 write_packdata(td, "I", search_text(textree, childname))
                 write_packdata(td, "I", fstree[children[childname]]["ioffset"])
+            update_fssize(fsinfo, td)
 
 def write_blocks(td, fsinfo, textree, fstree):
     for nodeid in sorted(fstree):
@@ -99,6 +109,7 @@ def write_blocks(td, fsinfo, textree, fstree):
             td.seek(node["doffset"])
             with open(node["path"], "rb") as od:
                 td.write(od.read())
+            update_fssize(fsinfo, td)
 
 def get_fsnode(fstree, nodepath):
     nodestat = os.stat(nodepath)
@@ -221,10 +232,12 @@ if __name__ == "__main__":
 
     fsinfo = {}
     fsinfo["magics"] = args.magics
-    fsinfo["name"] = args.name
     fsinfo["rootid"] = get_fsnode(fstree, args.source)
     fsinfo["textbase"] = args.blocksize
     fsinfo["textsize"] = get_textsize(textio)
+    fsinfo["fsname"] = args.name
+    fsinfo["fssize"] = 0
+    fsinfo["blocksize"] = args.blocksize
     fsinfo["nodebase"] = fsinfo["textbase"] + get_steps(fsinfo["textsize"], args.blocksize)
 
     update_sizes(fstree)
@@ -238,11 +251,11 @@ if __name__ == "__main__":
 
     if args.target:
         td = open(args.target, "wb")
-        write_superblock(td, fsinfo, textree)
         write_texts(td, fsinfo, textree, textio)
         write_inodes(td, fsinfo, textree, fstree)
         write_dentries(td, fsinfo, textree, fstree)
         write_blocks(td, fsinfo, textree, fstree)
+        write_superblock(td, fsinfo, textree)
         td.close()
     if args.output:
         od = open(args.output, "w")
