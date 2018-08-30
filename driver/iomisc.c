@@ -32,6 +32,37 @@ size_t raonfs_block_read(struct super_block *sb, unsigned long pos, void *buf, s
 }
 
 /*
+ * Read string on a block device
+ */
+size_t raonfs_block_strcpy(struct super_block *sb, unsigned long pos, char *buf, size_t len)
+{
+	struct raonfs_sb_info *sbi = RAONFS_SB(sb);
+	struct buffer_head *bh;
+	unsigned long offset;
+	size_t segment;
+	size_t remains;
+
+	if (pos >= sbi->fssize)
+		return -EIO;
+	if (len > sbi->fssize - pos)
+		len = sbi->fssize - pos;
+
+	for (remains = len; remains > 0; buf += segment, remains -= segment, pos += segment) {
+		offset = pos & (sb->s_blocksize - 1);
+		segment = min_t(size_t, remains, sb->s_blocksize - offset);
+		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
+		if (bh == NULL)
+			return -EIO;
+		memcpy(buf, bh->b_data + offset, segment);
+		brelse(bh);
+	}
+
+	buf[0] = '\0';
+
+	return len;
+}
+
+/*
  * Get the length of a string on a block device
  */
 ssize_t raonfs_block_strlen(struct super_block *sb, unsigned long pos, size_t limit)
