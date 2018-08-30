@@ -92,7 +92,6 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 		return -ENOMEM;
 
 	sb->s_maxbytes = 0xffffffff;
-	sb->s_magic = RAONFS_MAGIC;
 	sb->s_flags |= SB_RDONLY | SB_NOATIME;
 	sb->s_op = &raonfs_super_operations;
 	sb->s_fs_info = sbi;
