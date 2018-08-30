@@ -20,13 +20,11 @@ static struct dentry *raonfs_lookup(struct inode *dir, struct dentry *dentry, un
 	struct inode *inode = NULL;
 	char cname[512];
 	const char *dname;
-	int dlen;
 	int top, btm, idx;
 	int cmp;
 	int ret;
 
 	dname = dentry->d_name.name;
-	dlen = dentry->d_name.len;
 
 	top = 0;
 	btm = dir->i_size / sizeof(struct raonfs_dentry) - 1;
@@ -38,10 +36,9 @@ static struct dentry *raonfs_lookup(struct inode *dir, struct dentry *dentry, un
 		if (ret < 0)
 			goto err1;
 
-		ret = raonfs_block_read(dir->i_sb, sbi->textbase + rde.nameoff, cname, rde.namelen);
+		ret = raonfs_block_strcpy(dir->i_sb, sbi->textbase + rde.nameoff, cname, rde.namelen);
 		if (ret < 0)
 			goto err1;
-		cname[rde.namelen] = '\0';
 
 		cmp = strcmp(cname, dname);
 		if (cmp == 0) {
@@ -84,10 +81,9 @@ static int raonfs_readdir(struct file *file, struct dir_context *ctx)
 		if (ret < 0)
 			break;
 
-		ret = raonfs_block_read(dir->i_sb, sbi->textbase + rde.nameoff, dname, rde.namelen);
+		ret = raonfs_block_strcpy(dir->i_sb, sbi->textbase + rde.nameoff, dname, rde.namelen);
 		if (ret < 0)
 			break;
-		dname[rde.namelen] = '\0';
 
 		if (!dir_emit(ctx, dname, rde.namelen, rde.ioffset, raonfs_filetype_table[rde.type]))
 			break;
