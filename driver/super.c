@@ -121,6 +121,8 @@ struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 
 	switch (inode->i_mode & S_IFMT) {
 		case S_IFREG:
+			inode->i_fop = &generic_ro_fops;
+			inode->i_data.a_ops = &raonfs_address_space_operations;
 			break;
 
 		case S_IFLNK:

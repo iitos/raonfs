@@ -1,6 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
+#include <linux/pagemap.h>
 #include "raonfs.h"
 #include "dbmisc.h"
 #include "iomisc.h"
@@ -96,4 +97,19 @@ const struct file_operations raonfs_dir_operations = {
 	.read						= generic_read_dir,
 	.iterate_shared	= raonfs_readdir,
 	.llseek					= generic_file_llseek
+};
+
+/*
+ * Read a page to cache
+ */
+static int raonfs_readpage(struct file *file, struct page *page)
+{
+	SetPageUptodate(page);
+	unlock_page(page);
+
+	return 0;
+}
+
+const struct address_space_operations raonfs_address_space_operations = {
+	.readpage		= raonfs_readpage
 };
