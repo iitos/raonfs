@@ -95,6 +95,7 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_magic = RAONFS_MAGIC;
 	sb->s_flags |= SB_RDONLY | SB_NOATIME;
 	sb->s_op = &raonfs_super_operations;
+	sb->s_fs_info = sbi;
 
 	/*
 	 * Set default block size temporarily
@@ -118,11 +119,21 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 		goto err2;
 	}
 
+	sb->s_magic = le32_to_cpu(rsb->magic);
+	if (sb->s_magic != RAONFS_MAGIC) {
+		raonfs_error("Can't find raon filesystem");
+		ret = -EINVAL;
+		goto err2;
+	}
+
+	if (sb->s_blocksize != rsb->blocksize)
+		sb_set_blocksize(sb, rsb->blocksize);
+
 	raonfs_notice("Mounting raonfs: magic(0x%x): blocksize(%d)", rsb->magic, rsb->blocksize);
 
 	kfree(rsb);
 
-	return 0;
+	return -EINVAL;
 
 err2:
 	kfree(rsb);
