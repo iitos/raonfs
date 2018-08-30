@@ -24,6 +24,7 @@ struct raonfs_superblock {
  */
 struct raonfs_inode {
 	__le32 size;
+	__le32 rdev;
 	__le16 mode;
 	__le16 uid;
 	__le16 gid;
