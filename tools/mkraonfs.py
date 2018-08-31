@@ -11,6 +11,8 @@ import json
 
 from collections import defaultdict
 
+INODE_INLINE_DATA_FLAG = 0
+
 ENDIAN_TYPE = os.getenv("ENDIAN_TYPE", "little")
 
 endian_formats = {}
@@ -79,7 +81,7 @@ def search_text(textree, token):
     return textree[token]
 
 def get_inodesize():
-    return struct.calcsize("IIHHHIIIQ")
+    return struct.calcsize("IIHHHIIIIQ")
 
 def write_inodes(td, fsinfo, textree, fstree):
     for nodeid in sorted(fstree):
@@ -93,6 +95,7 @@ def write_inodes(td, fsinfo, textree, fstree):
         write_packdata(td, "I", node["ctime"])
         write_packdata(td, "I", node["mtime"])
         write_packdata(td, "I", node["atime"])
+        write_packdata(td, "I", node["flags"])
         if "doffset" in node:
             write_packdata(td, "Q", node["doffset"])
         else:
@@ -146,6 +149,7 @@ def get_fsnode(fstree, nodepath):
         node["ctime"] = int(nodestat.st_ctime)
         node["mtime"] = int(nodestat.st_mtime)
         node["atime"] = int(nodestat.st_atime)
+        node["flags"] = 0
         if os.path.islink(nodepath):
             node["type"] = "link"
             node["link"] = os.readlink(nodepath)
@@ -209,6 +213,7 @@ def update_inlines(fstree, baseoffset, maxsize):
             continue
         node["ioffset"] = baseoffset + sizes
         node["doffset"] = baseoffset + sizes + isize
+        node["flags"] = node["flags"] | (1 << INODE_INLINE_DATA_FLAG)
         sizes += maxsize
     return sizes
 
