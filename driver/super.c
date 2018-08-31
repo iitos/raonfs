@@ -127,6 +127,9 @@ struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 			break;
 
 		case S_IFLNK:
+			inode->i_op = &page_symlink_inode_operations;
+			inode->i_data.a_ops = &raonfs_address_space_operations;
+			inode_nohighmem(inode);
 			break;
 
 		case S_IFDIR:
