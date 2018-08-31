@@ -7,6 +7,13 @@
 #define RAONFS_MAGIC	0x4e4f4152
 
 /*
+ * Inode flags
+ */
+enum {
+	RAONFS_INODE_INLINE_DATA = 0
+};
+
+/*
  * Superblock structure on disk of raonfs
  */
 struct raonfs_superblock {
@@ -32,6 +39,7 @@ struct raonfs_inode {
 	__le32 ctime;
 	__le32 mtime;
 	__le32 atime;
+	__le32 flags;
 	__le64 doffset;
 } __attribute__((__packed__));
 
@@ -50,6 +58,8 @@ struct raonfs_dentry {
  */
 struct raonfs_inode_info {
 	struct inode vfs_inode;
+
+	unsigned long flags;
 
 	__u64 doffset;
 };
@@ -73,6 +83,13 @@ static inline struct raonfs_sb_info *RAONFS_SB(struct super_block *sb)
 {
 	return sb->s_fs_info;
 }
+
+#define RAONFS_INODE_BIT_FUNCTIONS(name, field, offset)	\
+	static inline int raonfs_test_inode_##name(struct inode *inode, int bit) { return test_bit(bit + (offset), &RAONFS_INODE(inode)->field); }	\
+	static inline void raonfs_set_inode_##name(struct inode *inode, int bit) { set_bit(bit + (offset), &RAONFS_INODE(inode)->field); }	\
+	static inline void raonfs_clear_inode_##name(struct inode *inode, int bit) { clear_bit(bit + (offset), &RAONFS_INODE(inode)->field); }
+
+RAONFS_INODE_BIT_FUNCTIONS(flag, flags, 0);
 
 extern const struct inode_operations raonfs_dir_inode_operations;
 extern const struct file_operations raonfs_dir_operations;
