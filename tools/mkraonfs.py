@@ -129,7 +129,7 @@ def write_blocks(td, fsinfo, textree, fstree):
             update_fssize(fsinfo, td)
         elif node["type"] == "link":
             td.seek(node["doffset"])
-            td.write(node["link"])
+            td.write(node["link"].encode())
             update_fssize(fsinfo, td)
 
 def get_fsnode(fstree, nodepath):
