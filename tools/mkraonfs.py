@@ -274,7 +274,7 @@ if __name__ == "__main__":
     update_sizes(fstree)
 
     offsets = fsinfo["nodebase"]
-    for step in range(args.inlinestep, 1, -1):
+    for step in range(args.inlinestep, 0, -1):
         offsets += update_inlines(fstree, offsets, int(args.blocksize / pow(2, step)))
         offsets = get_steps(offsets, args.blocksize)
 
