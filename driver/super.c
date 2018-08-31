@@ -103,6 +103,7 @@ struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 		return inode;
 
 	ri = RAONFS_INODE(inode);
+	ri->flags = rie.flags;
 	ri->doffset = rie.doffset;
 
 	set_nlink(inode, 1);

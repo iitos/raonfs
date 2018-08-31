@@ -2,6 +2,8 @@
 #include <linux/slab.h>
 #include <linux/fs.h>
 #include <linux/pagemap.h>
+#include <linux/mpage.h>
+#include <linux/buffer_head.h>
 #include "raonfs.h"
 #include "dbmisc.h"
 #include "iomisc.h"
@@ -104,16 +106,77 @@ const struct file_operations raonfs_dir_operations = {
 };
 
 /*
- * Read a page to cache
+ * Map a block address to a bufferhead
  */
-static int raonfs_readpage(struct file *file, struct page *page)
+static int raonfs_get_block(struct inode *inode, sector_t iblock,
+		struct buffer_head *bh, int create)
 {
-	SetPageUptodate(page);
-	unlock_page(page);
+	struct raonfs_inode_info *ri = RAONFS_INODE(inode);
+
+	if (create) {
+		raonfs_error("can't allocate new block");
+		return -EROFS;
+	}
+
+	map_bh(bh, inode->i_sb, (ri->doffset >> inode->i_blkbits) + iblock);
 
 	return 0;
 }
 
+/*
+ * Read inline data to a pagecache
+ */
+static int raonfs_readpage_inline(struct inode *inode, struct page *page)
+{
+	struct raonfs_inode_info *ri = RAONFS_INODE(inode);
+	struct buffer_head *bh;
+	void *kaddr;
+
+	bh = sb_getblk(inode->i_sb, ri->doffset >> inode->i_blkbits);
+	if (unlikely(bh == NULL))
+		return -ENOMEM;
+
+	kaddr = kmap_atomic(page);
+	memcpy(kaddr, &bh->b_data[ri->doffset & ((1 << inode->i_blkbits) - 1)], inode->i_size);
+	flush_dcache_page(page);
+	kunmap_atomic(kaddr);
+	zero_user_segment(page, inode->i_size, PAGE_SIZE);
+	SetPageUptodate(page);
+	unlock_page(page);
+
+	put_bh(bh);
+
+	return 0;
+}
+
+/*
+ * Read a pagecache
+ */
+static int raonfs_readpage(struct file *file, struct page *page)
+{
+	struct inode *inode = file_inode(file);
+
+	if (raonfs_test_inode_flag(inode, RAONFS_INODE_INLINE_DATA))
+		return raonfs_readpage_inline(inode, page);
+
+	return mpage_readpage(page, raonfs_get_block);
+}
+
+/*
+ * Read pagecaches
+ */
+static int raonfs_readpages(struct file *file, struct address_space *mapping,
+		struct list_head *pages, unsigned nr_pages)
+{
+	struct inode *inode = mapping->host;
+
+	if (raonfs_test_inode_flag(inode, RAONFS_INODE_INLINE_DATA))
+		return 0;
+
+	return mpage_readpages(mapping, pages, nr_pages, raonfs_get_block);
+}
+
 const struct address_space_operations raonfs_address_space_operations = {
-	.readpage		= raonfs_readpage
+	.readpage = raonfs_readpage,
+	.readpages = raonfs_readpages
 };
