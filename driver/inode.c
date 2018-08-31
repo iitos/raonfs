@@ -154,7 +154,7 @@ static int raonfs_readpage_inline(struct inode *inode, struct page *page)
  */
 static int raonfs_readpage(struct file *file, struct page *page)
 {
-	struct inode *inode = file_inode(file);
+	struct inode *inode = page->mapping->host;
 
 	if (raonfs_test_inode_flag(inode, RAONFS_INODE_INLINE_DATA))
 		return raonfs_readpage_inline(inode, page);
