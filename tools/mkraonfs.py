@@ -130,9 +130,10 @@ def write_blocks(td, fsinfo, textree, fstree):
         elif node["type"] == "link":
             td.seek(node["doffset"])
             td.write(node["link"])
+            update_fssize(fsinfo, td)
 
 def get_fsnode(fstree, nodepath):
-    nodestat = os.stat(nodepath)
+    nodestat = os.lstat(nodepath)
     nodeid = nodestat.st_ino
     if nodeid not in fstree:
         fstree[nodeid] = node = {}
