@@ -4,8 +4,9 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 
-#define RAONFS_MAGIC			0x4e4f4152
-#define RAONFS_NAMELEN		32
+#define RAONFS_MAGIC				0x4e4f4152
+#define RAONFS_FILENAME_MAX	128
+#define RAONFS_NAMELEN			32
 
 /*
  * Inode flags
