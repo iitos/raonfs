@@ -40,9 +40,18 @@ static void raonfs_destroy_inode(struct inode *inode)
 static int raonfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	struct super_block *sb = dentry->d_sb;
+	struct raonfs_sb_info *sbi = RAONFS_SB(sb);
+	u64 id = 0;
+
+	id = huge_encode_dev(sb->s_bdev->bd_dev);
 
 	buf->f_type = RAONFS_MAGIC;
+	buf->f_namelen = RAONFS_FILENAME_MAX;
+	buf->f_bfree = buf->f_bavail = buf->f_ffree;
 	buf->f_bsize = sb->s_blocksize;
+	buf->f_blocks = (sbi->fssize + sb->s_blocksize - 1) >> sb->s_blocksize_bits;
+	buf->f_fsid.val[0] = (u32)(id >> 0);
+	buf->f_fsid.val[1] = (u32)(id >> 32);
 
 	return 0;
 }
