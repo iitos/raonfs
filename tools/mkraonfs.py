@@ -60,13 +60,14 @@ def update_fssize(fsinfo, td):
         fsinfo["fssize"] = fssize
 
 def get_inodesize():
-    return struct.calcsize("IIHHHIIIIQQ")
+    return struct.calcsize("IIIHHHIIIIQQ")
 
 def write_inodes(td, fsinfo, fstree):
     for nodeid in sorted(fstree):
         node = fstree[nodeid]
         td.seek(node["ioffset"])
         write_packdata(td, "I", node["size"])
+        write_packdata(td, "I", node["msize"])
         write_packdata(td, "I", node["rdev"])
         write_packdata(td, "H", node["mode"])
         write_packdata(td, "H", node["uid"])
