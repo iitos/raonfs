@@ -44,46 +44,25 @@ def read_packdata(td, fmt):
     return data
 
 def get_supersize():
-    return struct.calcsize("BBBBIIIIQII")
+    return struct.calcsize("BBBBIIQ32s")
 
-def write_superblock(td, fsinfo, textree):
+def write_superblock(td, fsinfo):
     td.seek(0)
     write_packdata(td, "BBBB", *bytearray(fsinfo["magics"], "utf-8"))
-    write_packdata(td, "I", fsinfo["textbase"])
-    write_packdata(td, "I", fsinfo["textsize"])
-    write_packdata(td, "I", search_text(textree, fsinfo["fsname"]))
-    write_packdata(td, "I", len(fsinfo["fsname"]))
-    write_packdata(td, "Q", fsinfo["fssize"])
     write_packdata(td, "I", fsinfo["blocksize"])
     write_packdata(td, "I", fsinfo["rootid"]["ioffset"])
+    write_packdata(td, "Q", fsinfo["fssize"])
+    write_packdata(td, "32s", fsinfo["fsname"].encode())
 
 def update_fssize(fsinfo, td):
     fssize = td.tell()
     if fsinfo["fssize"] < fssize:
         fsinfo["fssize"] = fssize
 
-def get_textsize(textio):
-    return sys.getsizeof(textio)
-
-def write_texts(td, fsinfo, textree, textio):
-    textio.seek(0)
-    td.seek(fsinfo["textbase"])
-    td.write(textio.read())
-    update_fssize(fsinfo, td)
-
-def insert_text(textree, token, textio):
-    if token not in textree:
-        textree[token] = textio.tell()
-        textio.write(token.encode("utf-8"))
-        textio.write(b'\0')
-
-def search_text(textree, token):
-    return textree[token]
-
 def get_inodesize():
-    return struct.calcsize("IIHHHIIIIQ")
+    return struct.calcsize("IIHHHIIIIQQ")
 
-def write_inodes(td, fsinfo, textree, fstree):
+def write_inodes(td, fsinfo, fstree):
     for nodeid in sorted(fstree):
         node = fstree[nodeid]
         td.seek(node["ioffset"])
@@ -100,26 +79,36 @@ def write_inodes(td, fsinfo, textree, fstree):
             write_packdata(td, "Q", node["doffset"])
         else:
             write_packdata(td, "Q", 0)
+        if "moffset" in node:
+            write_packdata(td, "Q", node["moffset"])
+        else:
+            write_packdata(td, "Q", 0)
         update_fssize(fsinfo, td)
 
 def get_dentsize():
     return struct.calcsize("IHHI")
 
-def write_dentries(td, fsinfo, textree, fstree):
+def write_dentries(td, fsinfo, fstree):
     for nodeid in sorted(fstree):
         node = fstree[nodeid]
         if node["type"] == "dir":
-            td.seek(node["doffset"])
             children = node["children"]
+            td.seek(node["doffset"])
+            textoffs = 0
             for childname in sorted(children):
                 child = fstree[children[childname]]
-                write_packdata(td, "I", search_text(textree, childname))
+                write_packdata(td, "I", textoffs)
                 write_packdata(td, "H", len(childname))
                 write_packdata(td, "H", dentry_types[child["type"]])
                 write_packdata(td, "I", child["ioffset"])
+                textoffs += len(childname)
+            td.seek(node["moffset"])
+            for childname in sorted(children):
+                child = fstree[children[childname]]
+                write_packdata(td, "{}s".format(len(childname)), childname.encode())
             update_fssize(fsinfo, td)
 
-def write_blocks(td, fsinfo, textree, fstree):
+def write_blocks(td, fsinfo, fstree):
     for nodeid in sorted(fstree):
         node = fstree[nodeid]
         if node["type"] == "file":
@@ -140,8 +129,10 @@ def get_fsnode(fstree, nodepath):
         node["id"] = nodeid
         node["type"] = "none"
         node["size"] = 0
+        node["msize"] = 0
         node["ioffset"] = 0
         node["doffset"] = 0
+        node["moffset"] = 0
         node["path"] = nodepath
         node["rdev"] = nodestat.st_rdev
         node["mode"] = nodestat.st_mode
@@ -199,7 +190,8 @@ def update_sizes(fstree):
         if node["type"] == "file":
             node["size"] = os.path.getsize(node["path"])
         elif node["type"] == "dir":
-            node["size"] = get_dentsize() * len(node["children"])
+            node["msize"] = sum(list(map(lambda x: len(x), node["children"])))
+            node["size"] = get_dentsize() * len(node["children"]) + node["msize"]
         elif node["type"] == "link":
             node["size"] = len(node["link"])
 
@@ -214,6 +206,7 @@ def update_inlines(fstree, baseoffset, maxsize):
             continue
         node["ioffset"] = baseoffset + sizes
         node["doffset"] = baseoffset + sizes + isize
+        node["moffset"] = baseoffset + sizes + isize + (node["size"] - node["msize"])
         node["flags"] = node["flags"] | (1 << INODE_INLINE_DATA_FLAG)
         sizes += maxsize
     return sizes
@@ -235,6 +228,7 @@ def update_extents(fstree, baseoffset, blocksize):
         if node["size"] == 0:
             continue
         node["doffset"] = baseoffset
+        node["moffset"] = baseoffset + (node["size"] - node["msize"])
         baseoffset = baseoffset + get_steps(node["size"], blocksize)
     return baseoffset
 
@@ -250,27 +244,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     fstree = build_fstree(args.source)
-
-    textree = {}
-    textio = io.BytesIO()
-    textio.write(b'#')
-
-    insert_text(textree, args.name, textio)
-
-    for key, node in fstree.items():
-        if "children" in node:
-            for childname, chlidid in node["children"].items():
-                insert_text(textree, childname, textio)
-
     fsinfo = {}
     fsinfo["magics"] = args.magics
-    fsinfo["rootid"] = get_fsnode(fstree, args.source)
-    fsinfo["textbase"] = args.blocksize
-    fsinfo["textsize"] = get_textsize(textio)
-    fsinfo["fsname"] = args.name
-    fsinfo["fssize"] = 0
     fsinfo["blocksize"] = args.blocksize
-    fsinfo["nodebase"] = fsinfo["textbase"] + get_steps(fsinfo["textsize"], args.blocksize)
+    fsinfo["rootid"] = get_fsnode(fstree, args.source)
+    fsinfo["fssize"] = 0
+    fsinfo["fsname"] = args.name
+    fsinfo["nodebase"] = args.blocksize
 
     update_sizes(fstree)
 
@@ -283,15 +263,13 @@ if __name__ == "__main__":
 
     if args.target:
         td = open(args.target, "wb")
-        write_texts(td, fsinfo, textree, textio)
-        write_inodes(td, fsinfo, textree, fstree)
-        write_dentries(td, fsinfo, textree, fstree)
-        write_blocks(td, fsinfo, textree, fstree)
-        write_superblock(td, fsinfo, textree)
+        write_inodes(td, fsinfo, fstree)
+        write_dentries(td, fsinfo, fstree)
+        write_blocks(td, fsinfo, fstree)
+        write_superblock(td, fsinfo)
         td.close()
     if args.output:
         od = open(args.output, "w")
-        print(json.dumps(textree, indent = 2), file = od)
         print(json.dumps(fsinfo, indent = 2), file = od)
         print(json.dumps(fstree, indent = 2), file = od)
         od.close()
