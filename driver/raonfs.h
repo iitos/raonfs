@@ -4,7 +4,8 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 
-#define RAONFS_MAGIC	0x4e4f4152
+#define RAONFS_MAGIC			0x4e4f4152
+#define RAONFS_NAMELEN		32
 
 /*
  * Inode flags
@@ -18,13 +19,10 @@ enum {
  */
 struct raonfs_superblock {
 	__le32 magic;
-	__le32 textbase;
-	__le32 textsize;
-	__le32 fsnameoff;
-	__le32 fsnamelen;
-	__le64 fssize;
 	__le32 blocksize;
 	__le32 ioffset;
+	__le64 fssize;
+	char fsname[RAONFS_NAMELEN];
 } __attribute__((__packed__));
 
 /*
@@ -32,6 +30,7 @@ struct raonfs_superblock {
  */
 struct raonfs_inode {
 	__le32 size;
+	__le32 msize;
 	__le32 rdev;
 	__le16 mode;
 	__le16 uid;
@@ -41,6 +40,7 @@ struct raonfs_inode {
 	__le32 atime;
 	__le32 flags;
 	__le64 doffset;
+	__le64 moffset;
 } __attribute__((__packed__));
 
 /*
@@ -62,14 +62,14 @@ struct raonfs_inode_info {
 	unsigned long flags;
 
 	__u64 doffset;
+	__u64 moffset;
+	__u32 msize;
 };
 
 /*
  * Superblock data in memory of raonfs
  */
 struct raonfs_sb_info {
-	__u32 textbase;
-	__u32 textsize;
 	__u32 fssize;
 	__u32 ioffset;
 };

@@ -17,7 +17,6 @@ static const unsigned char raonfs_filetype_table[] = {
  */
 static struct dentry *raonfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
 {
-	struct raonfs_sb_info *sbi = RAONFS_SB(dir->i_sb);
 	struct raonfs_inode_info *ri = RAONFS_INODE(dir);
 	struct raonfs_dentry rde;
 	struct inode *inode = NULL;
@@ -30,7 +29,7 @@ static struct dentry *raonfs_lookup(struct inode *dir, struct dentry *dentry, un
 	dname = dentry->d_name.name;
 
 	top = 0;
-	btm = dir->i_size / sizeof(struct raonfs_dentry) - 1;
+	btm = (dir->i_size - ri->msize) / sizeof(struct raonfs_dentry) - 1;
 
 	while (top <= btm) {
 		idx = (top + btm) / 2;
@@ -39,7 +38,7 @@ static struct dentry *raonfs_lookup(struct inode *dir, struct dentry *dentry, un
 		if (ret < 0)
 			goto err1;
 
-		ret = raonfs_block_strcpy(dir->i_sb, sbi->textbase + rde.nameoff, cname, rde.namelen);
+		ret = raonfs_block_strcpy(dir->i_sb, ri->moffset + rde.nameoff, cname, rde.namelen);
 		if (ret < 0)
 			goto err1;
 
@@ -70,7 +69,6 @@ const struct inode_operations raonfs_dir_inode_operations = {
 static int raonfs_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct inode *dir = file_inode(file);
-	struct raonfs_sb_info *sbi = RAONFS_SB(dir->i_sb);
 	struct raonfs_inode_info *ri = RAONFS_INODE(dir);
 	struct raonfs_dentry rde;
 	char dname[512];
@@ -79,12 +77,12 @@ static int raonfs_readdir(struct file *file, struct dir_context *ctx)
 
 	off = ctx->pos;
 
-	while (off < dir->i_size) {
+	while (off < (dir->i_size - ri->msize)) {
 		ret = raonfs_block_read(dir->i_sb, ri->doffset + off, &rde, sizeof(struct raonfs_dentry));
 		if (ret < 0)
 			break;
 
-		ret = raonfs_block_strcpy(dir->i_sb, sbi->textbase + rde.nameoff, dname, rde.namelen);
+		ret = raonfs_block_strcpy(dir->i_sb, ri->moffset + rde.nameoff, dname, rde.namelen);
 		if (ret < 0)
 			break;
 
