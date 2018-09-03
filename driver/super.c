@@ -89,7 +89,7 @@ struct inode *raonfs_iget(struct super_block *sb, unsigned long pos)
 	uid_t uid, gid;
 	int ret;
 
-	ret = raonfs_block_read(sb, pos, &rie, sizeof(rie));
+	ret = raonfs_block_read_memory(sb, pos, &rie, sizeof(rie));
 	if (ret < 0)
 		goto err1;
 
@@ -187,7 +187,7 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 	 */
 	sbi->fssize = 512;
 
-	ret = raonfs_block_read(sb, 0, rsb, 512);
+	ret = raonfs_block_read_memory(sb, 0, rsb, 512);
 	if (ret < 0) {
 		ret = -ENOMEM;
 		goto err2;
