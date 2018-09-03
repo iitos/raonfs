@@ -30,8 +30,6 @@ dentry_types["fifo"] = 6
 dentry_types["sock"] = 7
 
 def get_steps(bytesize, unitsize):
-    if type(bytesize) is io.BytesIO:
-        bytesize = sys.getsizeof(bytesize)
     return int(((bytesize - 1) / unitsize) + 1) * unitsize
 
 def write_packdata(td, fmt, *args):
