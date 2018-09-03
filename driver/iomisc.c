@@ -3,9 +3,9 @@
 #include "raonfs.h"
 
 /*
- * Read data on a block device
+ * Read memory data on a block device
  */
-size_t raonfs_block_read(struct super_block *sb, unsigned long pos, void *buf, size_t len)
+size_t raonfs_block_read_memory(struct super_block *sb, unsigned long pos, void *buf, size_t len)
 {
 	struct buffer_head *bh;
 	unsigned long offset;
@@ -26,9 +26,9 @@ size_t raonfs_block_read(struct super_block *sb, unsigned long pos, void *buf, s
 }
 
 /*
- * Read string on a block device
+ * Read string data on a block device
  */
-size_t raonfs_block_strcpy(struct super_block *sb, unsigned long pos, char *buf, size_t len)
+size_t raonfs_block_read_string(struct super_block *sb, unsigned long pos, char *buf, size_t len)
 {
 	struct buffer_head *bh;
 	unsigned long offset;
@@ -48,73 +48,4 @@ size_t raonfs_block_strcpy(struct super_block *sb, unsigned long pos, char *buf,
 	buf[0] = '\0';
 
 	return len;
-}
-
-/*
- * Get the length of a string on a block device
- */
-ssize_t raonfs_block_strlen(struct super_block *sb, unsigned long pos, size_t limit)
-{
-	struct buffer_head *bh;
-	unsigned long offset;
-	size_t segment;
-	ssize_t len = 0;
-	u_char *buf, *p;
-
-	for (; limit > 0; limit -= segment, pos += segment, len += segment) {
-		offset = pos & (sb->s_blocksize - 1);
-		segment = min_t(size_t, limit, sb->s_blocksize - offset);
-		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
-		if (bh == NULL)
-			return -EIO;
-		buf = bh->b_data + offset;
-		p = memchr(buf, 0, segment);
-		brelse(bh);
-		if (p != NULL)
-			return len + (p - buf);
-	}
-
-	return len;
-}
-
-/*
- * Compare two strings on a block device
- */
-int raonfs_block_strcmp(struct super_block *sb, unsigned long pos, const char *str, size_t size)
-{
-	struct buffer_head *bh;
-	unsigned long offset;
-	size_t segment;
-	bool matched;
-	bool terminated = false;
-
-	for (; size > 0; size -= segment, pos += segment, str += segment) {
-		offset = pos & (sb->s_blocksize - 1);
-		segment = min_t(size_t, size, sb->s_blocksize - offset);
-		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
-		if (bh == NULL)
-			return -EIO;
-		matched = memcmp(bh->b_data + offset, str, segment) == 0;
-		if (matched && size == 0 && offset + segment < sb->s_blocksize) {
-			if (!bh->b_data[offset + segment])
-				terminated = true;
-			else
-				matched = false;
-		}
-		brelse(bh);
-		if (!matched)
-			return 1;
-	}
-
-	if (!terminated) {
-		bh = sb_bread(sb, pos >> sb->s_blocksize_bits);
-		if (bh == NULL)
-			return -EIO;
-		matched = !bh->b_data[0];
-		brelse(bh);
-		if (!matched)
-			return 1;
-	}
-
-	return 0;
 }

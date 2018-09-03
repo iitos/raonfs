@@ -34,11 +34,11 @@ static struct dentry *raonfs_lookup(struct inode *dir, struct dentry *dentry, un
 	while (top <= btm) {
 		idx = (top + btm) / 2;
 
-		ret = raonfs_block_read(dir->i_sb, ri->doffset + idx * sizeof(struct raonfs_dentry), &rde, sizeof(struct raonfs_dentry));
+		ret = raonfs_block_read_memory(dir->i_sb, ri->doffset + idx * sizeof(struct raonfs_dentry), &rde, sizeof(struct raonfs_dentry));
 		if (ret < 0)
 			goto err1;
 
-		ret = raonfs_block_strcpy(dir->i_sb, ri->moffset + rde.nameoff, cname, rde.namelen);
+		ret = raonfs_block_read_string(dir->i_sb, ri->moffset + rde.nameoff, cname, rde.namelen);
 		if (ret < 0)
 			goto err1;
 
@@ -78,11 +78,11 @@ static int raonfs_readdir(struct file *file, struct dir_context *ctx)
 	off = ctx->pos;
 
 	while (off < (dir->i_size - ri->msize)) {
-		ret = raonfs_block_read(dir->i_sb, ri->doffset + off, &rde, sizeof(struct raonfs_dentry));
+		ret = raonfs_block_read_memory(dir->i_sb, ri->doffset + off, &rde, sizeof(struct raonfs_dentry));
 		if (ret < 0)
 			break;
 
-		ret = raonfs_block_strcpy(dir->i_sb, ri->moffset + rde.nameoff, dname, rde.namelen);
+		ret = raonfs_block_read_string(dir->i_sb, ri->moffset + rde.nameoff, dname, rde.namelen);
 		if (ret < 0)
 			break;
 
