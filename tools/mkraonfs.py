@@ -13,12 +13,6 @@ from collections import defaultdict
 
 INODE_INLINE_DATA_FLAG = 0
 
-ENDIAN_TYPE = os.getenv("ENDIAN_TYPE", "little")
-
-endian_formats = {}
-endian_formats["little"] = "<"
-endian_formats["big"] = ">"
-
 dentry_types = {}
 dentry_types["none"] = 0
 dentry_types["dir"] = 1
@@ -33,10 +27,10 @@ def get_steps(bytesize, unitsize):
     return int(((bytesize - 1) / unitsize) + 1) * unitsize
 
 def write_packdata(td, fmt, *args):
-    return td.write(struct.pack("{}{}".format(endian_formats.get(ENDIAN_TYPE, ""), fmt), *args))
+    return td.write(struct.pack("<{}".format(fmt), *args))
 
 def read_packdata(td, fmt):
-    data = struct.unpack("{}{}".format(endian_formats.get(ENDIAN_TYPE, ""), fmt), td.read(struct.calcsize(fmt)))
+    data = struct.unpack("<{}".format(fmt), td.read(struct.calcsize(fmt)))
     if len(fmt) == 1:
         return data[0]
     return data
