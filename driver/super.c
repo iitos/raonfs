@@ -4,6 +4,7 @@
 #include <linux/init.h>
 #include <linux/statfs.h>
 #include "raonfs.h"
+#include "xattr.h"
 #include "dbmisc.h"
 #include "iomisc.h"
 
@@ -179,6 +180,7 @@ static int raonfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_maxbytes = 0xffffffff;
 	sb->s_flags |= SB_RDONLY | SB_NOATIME;
 	sb->s_op = &raonfs_super_operations;
+	sb->s_xattr = raonfs_xattr_handlers;
 	sb->s_fs_info = sbi;
 
 	/*
